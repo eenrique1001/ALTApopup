@@ -30,30 +30,26 @@ style.textContent = `
     font-size: 16px;
 }
 `;
-document.head.appendChild(style)
+document.head.appendChild(style);
+
 
 let popup = null;
-let currentTheme = "light";
+let activeHotkey = "Shift";
 
-// Load theme on startup
-browser.storage.local.get("theme").then(data => {
-    currentTheme = data.theme || "light";
-});
 
-// Listen for theme update messages
-browser.runtime.onMessage.addListener((msg) => {
-    if (msg.type === "show_analysis_popup") {
-        showPopup(msg.text);
-    }
-    if (msg.type === "update_theme") {
-        currentTheme = msg.theme;
-        applyTheme();
-    }
-});
+/* -------------------------------------------------------
+   ALWAYS LOAD THE THEME FRESH WHEN OPENING THE POPUP
+   (No need to track theme updates in real time)
+-------------------------------------------------------- */
 
-function showPopup(text) {
+async function showPopup(text) {
+    // Load latest theme *RIGHT NOW*
+    const { theme } = await browser.storage.local.get("theme");
+    const currentTheme = theme || "light";
+
     // Remove old popup
     if (popup) popup.remove();
+
     popup = document.createElement("div");
     popup.classList.add("analyze-popup");
 
@@ -66,19 +62,22 @@ function showPopup(text) {
     `;
 
     popup.querySelector(".popup-body").textContent = text;
-
     popup.querySelector("#closePopup").onclick = () => popup.remove();
 
     document.body.appendChild(popup);
 
-    applyTheme();
+    applyTheme(currentTheme);
     enableOutsideClickClose();
 }
 
-function applyTheme() {
+
+/* -------------------------------------------------------
+   APPLY THE THEME *ONLY WHEN POPUP IS CREATED*
+-------------------------------------------------------- */
+function applyTheme(theme) {
     if (!popup) return;
 
-    if (currentTheme === "dark") {
+    if (theme === "dark") {
         popup.style.background = "#222";
         popup.style.color = "#fff";
         popup.style.border = "1px solid #555";
@@ -89,7 +88,10 @@ function applyTheme() {
     }
 }
 
-// Close popup when clicking outside
+
+/* -------------------------------------------------------
+   Close popup when clicking outside
+-------------------------------------------------------- */
 function enableOutsideClickClose() {
     function handler(e) {
         if (!popup) return;
@@ -99,4 +101,51 @@ function enableOutsideClickClose() {
         }
     }
     document.addEventListener("mousedown", handler);
+}
+
+
+/* -------------------------------------------------------
+   HOTKEY LOADING
+-------------------------------------------------------- */
+
+browser.storage.local.get(["profiles", "currentProfile"]).then(data => {
+    const profile = data.profiles[data.currentProfile];
+    activeHotkey = profile.hotkey || "Shift";
+});
+
+// React to profile switching
+browser.storage.onChanged.addListener(changes => {
+    if (changes.profiles || changes.currentProfile) {
+        browser.storage.local.get(["profiles", "currentProfile"]).then(data => {
+            const profile = data.profiles[data.currentProfile];
+            activeHotkey = profile.hotkey || "Shift";
+        });
+    }
+});
+
+
+/* -------------------------------------------------------
+   Listen for selection + hotkey
+-------------------------------------------------------- */
+document.addEventListener("keydown", (e) => {
+    if (matchHotkey(e, activeHotkey)) {
+        const selectedText = window.getSelection().toString().trim();
+        if (selectedText.length > 0) {
+            showPopup(selectedText);
+        }
+    }
+});
+
+function matchHotkey(event, hotkey) {
+    const key = hotkey.toLowerCase();
+
+    // simple keys
+    if (key === "shift") return event.key === "Shift";
+    if (key === "ctrl") return event.ctrlKey;
+    if (key === "alt") return event.altKey;
+    if (key === "meta") return event.metaKey;
+    if (key === "space") return event.key === " ";
+
+    // regular letter/number keys
+    return event.key.toLowerCase() === key;
 }

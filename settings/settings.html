@@ -30,6 +30,9 @@
 <div id="profileSettings">
     <h4>Profile Data</h4>
 
+    <label>Hotkey for this profile:</label>
+    <input id="hotkeyInput" type="text" placeholder="Click and press a key" readonly />
+
     <label>AI Credentials:</label><br>
     <input type="text" id="aiCredentials"><br><br>
 
@@ -37,6 +40,6 @@
     <textarea id="prompt" rows="4"></textarea>
 </div>
 
-<script src="settings.js"></script>
+<script type="module" src="settings.js"></script>
 </body>
 </html>
