@@ -1,0 +1,22 @@
+body {
+    font-family: sans-serif;
+    padding: 15px;
+}
+
+body.dark {
+    background: #222;
+    color: white;
+}
+
+body.dark select,
+body.dark input,
+body.dark textarea {
+    background: #333;
+    color: white;
+    border: 1px solid #555;
+}
+
+
+textarea, input {
+    width: 100%;
+}

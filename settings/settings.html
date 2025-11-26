@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Settings</title>
+<link rel="stylesheet" href="settings.css">
+</head>
+<body>
+
+<h2>Settings</h2>
+
+<label>Theme:</label>
+<select id="themeSelect">
+  <option value="light">Light</option>
+  <option value="dark">Dark</option>
+</select>
+<button id="saveAndReload">Save & Reload Page</button>
+
+
+<hr>
+
+<h3>Profiles</h3>
+
+<label>Active Profile:</label>
+<select id="profileSelect"></select>
+
+<button id="addProfile">Add Profile</button>
+<button id="deleteProfile">Delete Profile</button>
+
+<div id="profileSettings">
+    <h4>Profile Data</h4>
+
+    <label>AI Credentials:</label><br>
+    <input type="text" id="aiCredentials"><br><br>
+
+    <label>Prompt:</label><br>
+    <textarea id="prompt" rows="4"></textarea>
+</div>
+
+<script src="settings.js"></script>
+</body>
+</html>
