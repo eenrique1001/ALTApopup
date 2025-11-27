@@ -1,31 +1,45 @@
-import { loadProfileFields, loadProfiles, addProfile, deleteProfile, saveProfile } from "./profileManager.js";
+import {
+    loadProfileFields,
+    loadProfiles,
+    addProfile,
+    deleteProfile,
+    saveProfile,
+    renderProviderFields
+} from "./profileManager.js";
+
 import { initHotkeyCapture } from "./hotkeyManager.js";
 import { loadTheme } from "./themeManager.js";
 
-// --- MAIN INITIALIZATION ---
+// MAIN INIT
 document.addEventListener("DOMContentLoaded", async () => {
     await loadTheme();
     await loadProfiles();
     initHotkeyCapture();
+
+    // Ensure provider fields render on first load
+    const provider = document.getElementById("providerSelect").value;
+    renderProviderFields(provider);
+
+    // Handle provider switch -> update fields immediately
+    document.getElementById("providerSelect").onchange = async (e) => {
+        const provider = e.target.value;
+
+        renderProviderFields(provider); // empty fields, new provider layout
+        await saveProfile();            // store provider choice
+    };
+
+    // Prompt, hotkey auto-save
+    document.getElementById("prompt").oninput = saveProfile;
+    document.getElementById("hotkeyInput").oninput = saveProfile;
 });
 
-// Apply theme change 
+// Theme Apply button
 document.getElementById("applyChanges").onclick = async () => {
     const theme = document.getElementById("themeSelect").value;
-
-    // Apply theme immediately
     document.body.classList.toggle("dark", theme === "dark");
-
-    // Save theme
     await browser.storage.local.set({ theme });
 };
 
-
-// Profile management buttons
+// Profile Buttons
 document.getElementById("addProfile").onclick = addProfile;
 document.getElementById("deleteProfile").onclick = deleteProfile;
-
-// Save on field input
-document.getElementById("aiCredentials").oninput = saveProfile;
-document.getElementById("prompt").oninput = saveProfile;
-document.getElementById("hotkeyInput").oninput = saveProfile;

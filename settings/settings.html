@@ -33,8 +33,23 @@
     <label>Hotkey for this profile:</label>
     <input id="hotkeyInput" type="text" placeholder="Click and press a key" readonly />
 
-    <label>AI Credentials:</label><br>
-    <input type="text" id="aiCredentials"><br><br>
+    <label>Provider:</label>
+      <select id="providerSelect">
+        <option value="openai">OpenAI</option>
+        <option value="anthropic">Anthropic</option>
+        <option value="google_gemini">Google Gemini</option>
+        <option value="mistral">Mistral</option>
+        <option value="groq">Groq</option>
+      </select>
+
+    <div id="providerFields">
+      <!-- These fields will change depending on provider -->
+      <!-- OpenAI: api key and model -->
+      <!-- Anthropic: api key -->
+      <!-- Gemini: api key -->
+      <!-- Mistral: api key -->
+      <!-- Groq: api key -->
+    </div>
 
     <label>Prompt:</label><br>
     <textarea id="prompt" rows="4"></textarea>
