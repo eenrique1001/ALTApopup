@@ -9,8 +9,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     initHotkeyCapture();
 });
 
-// Save + reload all tabs
-document.getElementById("saveAndReload").onclick = async () => {
+// Apply theme change 
+document.getElementById("applyChanges").onclick = async () => {
     const theme = document.getElementById("themeSelect").value;
 
     // Apply theme immediately
