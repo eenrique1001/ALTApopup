@@ -9,8 +9,8 @@ export async function loadProfiles() {
     if (!data.profiles || Object.keys(data.profiles).length === 0) {
         data.profiles = {
             "default": {
-                provider: "openai",
-                providerData: { apiKey: "", model: "gpt-4o-mini" },
+                provider: "groq", // default provider
+                providerData: { apiKey: "", model: "llama-3.1-8b-instant" }, // corrected groq default model
                 prompt: "",
                 hotkey: "Shift"
             }
@@ -25,7 +25,6 @@ export async function loadProfiles() {
 
     const profiles = data.profiles;
 
-    // Populate profile selector
     const profileSelect = document.getElementById("profileSelect");
     profileSelect.innerHTML = "";
 
@@ -36,13 +35,13 @@ export async function loadProfiles() {
         profileSelect.appendChild(opt);
     });
 
-    // Load current profile
     if (data.currentProfile && profiles[data.currentProfile]) {
         profileSelect.value = data.currentProfile;
-        loadProfileFields(profiles[data.currentProfile]);
+        setTimeout(() => {
+            loadProfileFields(profiles[data.currentProfile]);
+        }, 0);
     }
 
-    // Change profile
     profileSelect.onchange = async () => {
         const selected = profileSelect.value;
         const stored = await browser.storage.local.get(["profiles"]);
@@ -56,15 +55,12 @@ export async function loadProfiles() {
 // LOAD PROFILE FIELDS
 // --------------------------
 export function loadProfileFields(profile) {
-    // Hotkey + Prompt
     document.getElementById("hotkeyInput").value = profile.hotkey || "Shift";
     document.getElementById("prompt").value = profile.prompt || "";
 
-    // Provider
     const providerSelect = document.getElementById("providerSelect");
-    providerSelect.value = profile.provider || "openai";
+    providerSelect.value = profile.provider || "groq";
 
-    // Render provider fields
     renderProviderFields(profile.provider, profile.providerData || {});
 }
 
@@ -79,7 +75,6 @@ export async function saveProfile() {
 
     const provider = document.getElementById("providerSelect").value;
 
-    // Collect provider-specific fields
     const providerData = {};
     const providerInputs = document.querySelectorAll("#providerFields input, #providerFields select");
 
@@ -108,8 +103,8 @@ export async function addProfile() {
     const profiles = data.profiles || {};
 
     profiles[name] = {
-        provider: "openai",
-        providerData: { apiKey: "", model: "gpt-4o-mini" },
+        provider: "groq",
+        providerData: { apiKey: "", model: "llama-3.1-8b-instant" }, // corrected groq default model
         prompt: "",
         hotkey: "Shift"
     };
@@ -150,6 +145,8 @@ export function renderProviderFields(provider, storedData = {}) {
     let html = "";
 
     switch (provider) {
+
+        // OPENAI
         case "openai":
             html = `
                 <label>API Key:</label>
@@ -164,13 +161,7 @@ export function renderProviderFields(provider, storedData = {}) {
             `;
             break;
 
-        case "anthropic":
-            html = `
-                <label>API Key:</label>
-                <input type="password" id="apiKey" placeholder="Anthropic API Key">
-            `;
-            break;
-
+        // GEMINI
         case "google_gemini":
             html = `
                 <label>API Key:</label>
@@ -178,30 +169,29 @@ export function renderProviderFields(provider, storedData = {}) {
             `;
             break;
 
-        case "mistral":
-            html = `
-                <label>API Key:</label>
-                <input type="password" id="apiKey" placeholder="Mistral API Key">
-            `;
-            break;
-
+        // GROQ (UPDATED)
         case "groq":
             html = `
                 <label>API Key:</label>
                 <input type="password" id="apiKey" placeholder="Groq API Key">
+
+                <label>Model:</label>
+                <select id="model">
+                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                    <option value="llama-3.1-70b-versatile">llama-3.1-70b-versatile</option>
+                    <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                </select>
             `;
             break;
     }
 
     container.innerHTML = html;
 
-    // Restore saved provider data
     Object.keys(storedData).forEach(key => {
         const el = document.getElementById(key);
         if (el) el.value = storedData[key];
     });
 
-    // Save on change
     container.querySelectorAll("input,select").forEach(el => {
         el.oninput = saveProfile;
     });

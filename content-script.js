@@ -1,17 +1,26 @@
+/* content-script.js — updated (no AI button, auto-run) */
+
 const style = document.createElement("style");
 style.textContent = `
 .analyze-popup {
     position: fixed;
     top: 20px;
     right: 20px;
-    width: 350px;
-    max-height: 300px;
+    width: 400px;
+    max-height: 400px;
     overflow: auto;
     padding: 15px;
     z-index: 999999;
     border-radius: 8px;
     font-family: sans-serif;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    background: white;
+    color: black;
+}
+
+.analyze-popup.dark {
+    background: #222;
+    color: #fff;
 }
 
 .analyze-popup .popup-header {
@@ -29,69 +38,81 @@ style.textContent = `
     border-radius: 4px;
     font-size: 16px;
 }
+
+.analyze-popup .popup-body {
+    margin-top: 10px;
+    white-space: pre-wrap;
+}
+
+.analyze-popup .ai-result {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(0,0,0,0.1);
+    white-space: pre-wrap;
+}
+
+#aiStatus {
+    font-size: 12px;
+    color: gray;
+    margin-top: 4px;
+}
 `;
 document.head.appendChild(style);
-
 
 let popup = null;
 let activeHotkey = "Shift";
 
-
-/* -------------------------------------------------------
-   ALWAYS LOAD THE THEME FRESH WHEN OPENING THE POPUP
-   (No need to track theme updates in real time)
--------------------------------------------------------- */
-
+/* showPopup now auto-runs AI immediately */
 async function showPopup(text) {
-    // Load latest theme *RIGHT NOW*
     const { theme } = await browser.storage.local.get("theme");
     const currentTheme = theme || "light";
 
-    // Remove old popup
     if (popup) popup.remove();
 
     popup = document.createElement("div");
     popup.classList.add("analyze-popup");
+    if (currentTheme === "dark") popup.classList.add("dark");
 
     popup.innerHTML = `
         <div class="popup-header">
-            <strong>Analyzed Text</strong>
+            <strong>Analyzing...</strong>
             <button id="closePopup">×</button>
         </div>
-        <div class="popup-body"></div>
+
+        <div class="popup-body" id="analyze_input">${text}</div>
+
+        <div id="aiStatus">loading...</div>
+        <div class="ai-result" id="aiResult"></div>
     `;
 
-    popup.querySelector(".popup-body").textContent = text;
     popup.querySelector("#closePopup").onclick = () => popup.remove();
-
     document.body.appendChild(popup);
-
-    applyTheme(currentTheme);
     enableOutsideClickClose();
-}
 
+    const aiStatus = popup.querySelector("#aiStatus");
+    const aiResult = popup.querySelector("#aiResult");
 
-/* -------------------------------------------------------
-   APPLY THE THEME *ONLY WHEN POPUP IS CREATED*
--------------------------------------------------------- */
-function applyTheme(theme) {
-    if (!popup) return;
+    // 🔥 Run AI immediately when popup shows
+    try {
+        const response = await browser.runtime.sendMessage({
+            type: "run_ai",
+            text
+        });
 
-    if (theme === "dark") {
-        popup.style.background = "#222";
-        popup.style.color = "#fff";
-        popup.style.border = "1px solid #555";
-    } else {
-        popup.style.background = "white";
-        popup.style.color = "black";
-        popup.style.border = "1px solid #888";
+        if (response && response.success) {
+            aiResult.textContent = response.result;
+            aiStatus.textContent = "done";
+            popup.querySelector(".popup-header strong").textContent = "Analysis Result";
+        } else {
+            aiStatus.textContent = "error";
+            aiResult.textContent = response?.error || "Unknown error";
+        }
+    } catch (err) {
+        aiStatus.textContent = "error";
+        aiResult.textContent = String(err);
     }
 }
 
-
-/* -------------------------------------------------------
-   Close popup when clicking outside
--------------------------------------------------------- */
 function enableOutsideClickClose() {
     function handler(e) {
         if (!popup) return;
@@ -103,34 +124,26 @@ function enableOutsideClickClose() {
     document.addEventListener("mousedown", handler);
 }
 
-
-/* -------------------------------------------------------
-   HOTKEY LOADING
--------------------------------------------------------- */
-
+/* HOTKEY LOADING and listener */
 browser.storage.local.get(["profiles", "currentProfile"]).then(data => {
-    const profile = data.profiles[data.currentProfile];
-    activeHotkey = profile.hotkey || "Shift";
+    const profile = data.profiles && data.profiles[data.currentProfile];
+    activeHotkey = (profile && profile.hotkey) || "Shift";
 });
 
 // React to profile switching
 browser.storage.onChanged.addListener(changes => {
     if (changes.profiles || changes.currentProfile) {
         browser.storage.local.get(["profiles", "currentProfile"]).then(data => {
-            const profile = data.profiles[data.currentProfile];
-            activeHotkey = profile.hotkey || "Shift";
+            const profile = data.profiles && data.profiles[data.currentProfile];
+            activeHotkey = (profile && profile.hotkey) || "Shift";
         });
     }
 });
 
-
-/* -------------------------------------------------------
-   Listen for selection + hotkey
--------------------------------------------------------- */
 document.addEventListener("keydown", (e) => {
     if (matchHotkey(e, activeHotkey)) {
-        const selectedText = window.getSelection().toString().trim();
-        if (selectedText.length > 0) {
+        const selectedText = window.getSelection()?.toString()?.trim();
+        if (selectedText?.length > 0) {
             showPopup(selectedText);
         }
     }
@@ -139,13 +152,18 @@ document.addEventListener("keydown", (e) => {
 function matchHotkey(event, hotkey) {
     const key = hotkey.toLowerCase();
 
-    // simple keys
     if (key === "shift") return event.key === "Shift";
     if (key === "ctrl") return event.ctrlKey;
     if (key === "alt") return event.altKey;
     if (key === "meta") return event.metaKey;
     if (key === "space") return event.key === " ";
 
-    // regular letter/number keys
     return event.key.toLowerCase() === key;
 }
+
+/* listen to context menu show message */
+browser.runtime.onMessage.addListener((msg) => {
+    if (msg && msg.type === "show_analysis_popup") {
+        showPopup(msg.text);
+    }
+});

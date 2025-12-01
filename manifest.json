@@ -4,7 +4,17 @@
   "version": "1.0",
   "description": "Analyze selected text and manage profiles with settings.",
 
-  "permissions": ["contextMenus", "storage", "activeTab", "tabs"],
+  "permissions": [
+    "contextMenus",
+    "storage",
+    "activeTab",
+    "tabs",
+    "https://api.openai.com/*",
+    "https://api.anthropic.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.mistral.ai/*",
+    "https://api.groq.com/*"
+  ],
 
   "background": {
     "scripts": ["background.js"]
@@ -25,10 +35,14 @@
   },
 
   "content_scripts": [
-  {
-    "matches": ["<all_urls>"],
-    "js": ["content-script.js"]
-  }
-]
-
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*",
+        "file://*/*"
+      ],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ]
 }
