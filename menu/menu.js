@@ -1,14 +1,16 @@
+import { loadProfiles } from "../settings/profileManager.js";
+
 document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("openSettings").addEventListener("click", async () => {
         console.log("Opening settings...");
-        await browser.runtime.openOptionsPage();  // THIS WILL WORK NOW
+        await browser.runtime.openOptionsPage();
     });
 
     loadProfiles();
 });
 
-async function loadProfiles() {
+/*async function loadProfiles() {
     const data = await browser.storage.local.get(["profiles", "currentProfile"]);
     const profiles = data.profiles || {};
     const current = data.currentProfile || "";
@@ -27,4 +29,4 @@ async function loadProfiles() {
     select.addEventListener("change", async () => {
         await browser.storage.local.set({ currentProfile: select.value });
     });
-}
+}*/

@@ -166,6 +166,14 @@ export function renderProviderFields(provider, storedData = {}) {
             html = `
                 <label>API Key:</label>
                 <input type="password" id="apiKey" placeholder="Google Gemini Key">
+
+                <label>Model:</label>
+                <select id="model">
+                    <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                    <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+                    <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                    <option value="gemini-3-pro">gemini-3-pro</option>
+                </select>
             `;
             break;
 

@@ -48,16 +48,15 @@ async function runGroq(providerData, prompt, text) {
 // ======================================================
 async function runGemini(providerData, prompt, text) {
     const apiKey = providerData.apiKey;
-    const model = providerData.model || "models/gemini-1.5-flash";
+    const model = providerData.model || "gemini-2.5-flash";
 
     if (!apiKey) throw new Error("Google Gemini API key missing");
 
     const endpoint =
-        `https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
     const body = {
         contents: [{
-            role: "user",
             parts: [{
                 text: `${prompt}\n\n=== Selected text ===\n${text}`
             }]
@@ -93,11 +92,15 @@ async function runOpenAI(providerData, prompt, text) {
 
     if (!apiKey) throw new Error("OpenAI API key missing");
 
-    const endpoint = "https://api.openai.com/v1/responses";
+    const endpoint = "https://api.openai.com/v1/chat/completions";
 
     const body = {
         model,
-        input: `${prompt}\n\n=== Selected text ===\n${text}`
+        messages: [
+            { role: "system", content: prompt },
+            { role: "user", content: text }
+        ],
+        max_tokens: 512
     };
 
     const res = await fetch(endpoint, {
@@ -115,7 +118,8 @@ async function runOpenAI(providerData, prompt, text) {
 
     const data = await res.json();
 
-    if (data.output_text) return data.output_text;
+    if (data.choices?.[0]?.message?.content)
+        return data.choices[0].message.content;
 
     return JSON.stringify(data);
 }
