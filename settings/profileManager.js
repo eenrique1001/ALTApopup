@@ -12,7 +12,7 @@ export async function loadProfiles() {
                 provider: "groq", // default provider
                 providerData: { apiKey: "", model: "llama-3.1-8b-instant" }, // corrected groq default model
                 prompt: "",
-                hotkey: "Shift"
+                hotkey: "F"
             }
         };
         data.currentProfile = "default";
@@ -106,7 +106,7 @@ export async function addProfile() {
         provider: "groq",
         providerData: { apiKey: "", model: "llama-3.1-8b-instant" }, // corrected groq default model
         prompt: "",
-        hotkey: "Shift"
+        hotkey: "F"
     };
 
     await browser.storage.local.set({ profiles, currentProfile: name });

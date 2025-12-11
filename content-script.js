@@ -75,20 +75,24 @@ function formatAIResponse(text) {
     // --- Inline code (`code`) ---
     text = text.replace(/`([^`]+)`/g, `<code>$1</code>`);
 
-    // --- Bold ---
-    text = text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-
-    // --- Italic ---
-    text = text.replace(/\*(.+?)\*/g, "<em>$1</em>");
-
-    // --- Headings ---
+    // --- Headings (process longest first to avoid ## matching # of ###) ---
     text = text.replace(/^### (.+)$/gm, "<h3>$1</h3>");
     text = text.replace(/^## (.+)$/gm, "<h2>$1</h2>");
     text = text.replace(/^# (.+)$/gm, "<h1>$1</h1>");
 
-    // --- Bullet lists ---
+    // --- Bold and Italic (combined to avoid conflicts) ---
+    // Bold: **text**
+    text = text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    // Italic: *text* (but not **text** which is already bold, and avoid math like 2*3)
+    text = text.replace(/([^\*]|\A)\*([^\s\*][^\*]*?[^\s\*]|[^\s\*])\*([^\*]|$)/gm, "$1<em>$2</em>$3");
+
+    // --- Bullet lists (properly grouped) ---
+    // First, mark list items
     text = text.replace(/^\s*[-•] (.+)$/gm, "<li>$1</li>");
-    text = text.replace(/(<li>[\s\S]+?<\/li>)/g, "<ul>$1</ul>");
+    // Then wrap consecutive <li> tags, but only groups separated by non-list content
+    text = text.replace(/(<li>.*?<\/li>)(\n(?!<li>))/gs, "<ul>$1</ul>$2");
+    // Handle the last group if it ends with <li>
+    text = text.replace(/(<li>.*?<\/li>)$/s, "<ul>$1</ul>");
 
     // --- Newlines → Paragraphs ---
     const paragraphs = text
@@ -102,7 +106,7 @@ function formatAIResponse(text) {
 document.head.appendChild(style);
 
 let popup = null;
-let activeHotkey = "Shift";
+let activeHotkey = "F";
 
 /* showPopup now auto-runs AI immediately */
 async function showPopup(text) {
