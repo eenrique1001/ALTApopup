@@ -9,19 +9,22 @@
 
 <h2>Settings</h2>
 
-<label>Theme:</label>
+<label class="tooltip" data-tip="Select light or dark mode for the extension UI.">
+  Theme:
+</label>
 <select id="themeSelect">
   <option value="light">Light</option>
   <option value="dark">Dark</option>
 </select>
 <button id="applyChanges">Apply Changes</button>
 
-
 <hr>
 
 <h3>Profiles</h3>
 
-<label>Active Profile:</label>
+<label class="tooltip" data-tip="Choose which saved profile is currently active.">
+  Active Profile:
+</label>
 <select id="profileSelect"></select>
 
 <button id="addProfile">Add Profile</button>
@@ -30,27 +33,35 @@
 <div id="profileSettings">
     <h4>Profile Data</h4>
 
-    <label>Hotkey for this profile:</label>
+    <label class="tooltip" data-tip="Press a key to assign it as the hotkey that triggers the AI for this profile.">
+      Hotkey for this profile:
+    </label>
     <input id="hotkeyInput" type="text" placeholder="Click and press a key" readonly />
 
-    <label>Provider:</label>
-      <select id="providerSelect">
-        <option value="google_gemini">Google Gemini</option>
-        <option value="groq">Groq</option>
-        <option value="openai">OpenAI</option>
-      </select>
+    <label class="tooltip" data-tip="Choose the AI provider (Gemini, Groq, or OpenAI).">
+      Provider:
+    </label>
+    <select id="providerSelect">
+      <option value="google_gemini">Google Gemini</option>
+      <option value="groq">Groq</option>
+      <option value="openai">OpenAI</option>
+    </select>
 
     <div id="providerFields">
-      <!-- These fields will change depending on provider -->
-      <!-- OpenAI: api key and model -->
-      <!-- Anthropic: api key -->
-      <!-- Gemini: api key -->
-      <!-- Mistral: api key -->
-      <!-- Groq: api key -->
+      <!-- Dynamic provider fields (API Key / Model) appear here -->
     </div>
 
-    <label>Prompt:</label><br>
+    <label class="tooltip" data-tip="The instruction sent before your text. Controls how the AI responds.">
+      Prompt:
+    </label><br>
+
     <textarea id="prompt" rows="4"></textarea>
+    <br>
+
+    <label class="tooltip" data-tip="If enabled, the extension extracts the whole surrounding sentence to provide better context for the AI.">
+      <input type="checkbox" id="useSentenceContext">
+      Use sentence context
+    </label>
 </div>
 
 <script type="module" src="settings.js"></script>

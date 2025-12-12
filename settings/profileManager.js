@@ -12,7 +12,8 @@ export async function loadProfiles() {
                 provider: "groq", // default provider
                 providerData: { apiKey: "", model: "llama-3.1-8b-instant" }, // corrected groq default model
                 prompt: "",
-                hotkey: "F"
+                hotkey: "Shift",
+                useSentenceContext: false
             }
         };
         data.currentProfile = "default";
@@ -61,6 +62,8 @@ export function loadProfileFields(profile) {
     const providerSelect = document.getElementById("providerSelect");
     providerSelect.value = profile.provider || "groq";
 
+    document.getElementById("useSentenceContext").checked = profile.useSentenceContext || false;
+
     renderProviderFields(profile.provider, profile.providerData || {});
 }
 
@@ -86,7 +89,8 @@ export async function saveProfile() {
         provider,
         providerData,
         prompt: document.getElementById("prompt").value,
-        hotkey: document.getElementById("hotkeyInput").value || "Shift"
+        hotkey: document.getElementById("hotkeyInput").value || "Shift",
+        useSentenceContext: document.getElementById("useSentenceContext").checked
     };
 
     await browser.storage.local.set({ profiles });
@@ -106,7 +110,8 @@ export async function addProfile() {
         provider: "groq",
         providerData: { apiKey: "", model: "llama-3.1-8b-instant" }, // corrected groq default model
         prompt: "",
-        hotkey: "F"
+        hotkey: "Shift",
+        useSentenceContext: false
     };
 
     await browser.storage.local.set({ profiles, currentProfile: name });
@@ -149,7 +154,7 @@ export function renderProviderFields(provider, storedData = {}) {
         // OPENAI
         case "openai":
             html = `
-                <label>API Key:</label>
+                <label class="tooltip" data-tip="Insert your OpenAI API Key">API Key:</label>
                 <input type="password" id="apiKey" placeholder="OpenAI API Key">
 
                 <label>Model:</label>
@@ -164,7 +169,7 @@ export function renderProviderFields(provider, storedData = {}) {
         // GEMINI
         case "google_gemini":
             html = `
-                <label>API Key:</label>
+                <label class="tooltip" data-tip="Insert your Google Gemini API Key">API Key:</label>
                 <input type="password" id="apiKey" placeholder="Google Gemini Key">
 
                 <label>Model:</label>
@@ -180,7 +185,7 @@ export function renderProviderFields(provider, storedData = {}) {
         // GROQ (UPDATED)
         case "groq":
             html = `
-                <label>API Key:</label>
+                <label class="tooltip" data-tip="Insert your Groq API Key">API Key:</label>
                 <input type="password" id="apiKey" placeholder="Groq API Key">
 
                 <label>Model:</label>

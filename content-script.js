@@ -108,8 +108,53 @@ document.head.appendChild(style);
 let popup = null;
 let activeHotkey = "F";
 
-/* showPopup now auto-runs AI immediately */
-async function showPopup(text) {
+function extractSentence() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return "";
+
+    const selectedText = sel.toString().trim();
+    if (!selectedText) return "";
+
+    const container = sel.anchorNode;
+    if (!container) return "";
+
+    const element = container.parentElement;
+    if (!element) return "";
+
+    const text = element.textContent;
+    if (!text) return selectedText;
+
+    const index = text.indexOf(selectedText);
+    if (index === -1) return selectedText;
+
+    // Punctuation that ends a sentence
+    const ENDINGS = [".", "?", "!", "。", "？", "！"];
+
+    // --- Find left boundary ---
+    let left = index - 1;
+    while (left >= 0 && !ENDINGS.includes(text[left])) {
+        left--;
+    }
+
+    // --- Find right boundary ---
+    let right = index + selectedText.length;
+    while (right < text.length && !ENDINGS.includes(text[right])) {
+        right++;
+    }
+
+    // Extract, skipping punctuation on the left
+    const sentence = text.substring(left + 1, right + 1).trim();
+
+    return sentence || selectedText;
+}
+
+
+async function showPopup(input) {
+    const text = typeof input === "string" ? input : input.text;
+    const contextSentence = typeof input === "string" ? "" : input.contextSentence;
+    console.log("Showing popup for text:", text);
+    console.log("With context sentence:", contextSentence);
+
     const { theme } = await browser.storage.local.get("theme");
     const currentTheme = theme || "light";
 
@@ -142,8 +187,10 @@ async function showPopup(text) {
     try {
         const response = await browser.runtime.sendMessage({
             type: "run_ai",
-            text
+            text,
+            contextSentence
         });
+
 
         if (response && response.success) {
             aiResult.innerHTML = formatAIResponse(response.result);
@@ -186,14 +233,28 @@ browser.storage.onChanged.addListener(changes => {
     }
 });
 
-document.addEventListener("keydown", (e) => {
-    if (matchHotkey(e, activeHotkey)) {
-        const selectedText = window.getSelection()?.toString()?.trim();
-        if (selectedText?.length > 0) {
-            showPopup(selectedText);
-        }
-    }
+document.addEventListener("keydown", async (e) => {
+    if (!matchHotkey(e, activeHotkey)) return;
+
+    const selection = window.getSelection()?.toString()?.trim();
+    if (!selection) return;
+
+    const sentence = extractSentence();
+    console.log("Context sentence:", sentence);
+    console.log("Entrou"); 
+
+    const { profiles, currentProfile } =
+        await browser.storage.local.get(["profiles", "currentProfile"]);
+
+    const useContext =
+        profiles?.[currentProfile]?.useSentenceContext || false;
+
+    showPopup({
+        text: selection,
+        contextSentence: useContext ? sentence : ""
+    });
 });
+
 
 function matchHotkey(event, hotkey) {
     const key = hotkey.toLowerCase();

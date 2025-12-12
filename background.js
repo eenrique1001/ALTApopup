@@ -129,7 +129,7 @@ async function runOpenAI(providerData, prompt, text) {
 // ======================================================
 // MAIN DISPATCHER
 // ======================================================
-async function runAI(provider, providerData, prompt, text) {
+async function runAI(provider, providerData, text, prompt) {
     switch (provider) {
         case "openai":
             return await runOpenAI(providerData, prompt, text);
@@ -185,10 +185,16 @@ browser.runtime.onMessage.addListener((msg) => {
 
             const profile = profiles[currentProfile];
 
+            let finalPrompt = profile.prompt;
+
+            if (profile.useSentenceContext && msg.contextSentence) {
+                finalPrompt = `Context: ${msg.contextSentence}\n\n${profile.prompt}`;
+            }
+
             const output = await runAI(
                 profile.provider,
                 profile.providerData,
-                profile.prompt,
+                finalPrompt,
                 msg.text
             );
 

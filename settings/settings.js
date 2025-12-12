@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Prompt, hotkey auto-save
     document.getElementById("prompt").oninput = saveProfile;
     document.getElementById("hotkeyInput").oninput = saveProfile;
+    document.getElementById("useSentenceContext").onchange = saveProfile;
 });
 
 // Theme Apply button
