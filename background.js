@@ -188,7 +188,7 @@ browser.runtime.onMessage.addListener((msg) => {
             let finalPrompt = profile.prompt;
 
             if (profile.useSentenceContext && msg.contextSentence) {
-                finalPrompt = `Context: ${msg.contextSentence}\n\n${profile.prompt}`;
+                finalPrompt = `Selected Text: ${msg.text}\nContext: ${msg.contextSentence}\n\n${profile.prompt}`;
             }
 
             const output = await runAI(
