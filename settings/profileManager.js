@@ -13,7 +13,11 @@ export async function loadProfiles() {
                 providerData: { apiKey: "", model: "llama-3.1-8b-instant" }, // corrected groq default model
                 prompt: "",
                 hotkey: "Shift",
-                useSentenceContext: false
+                useSentenceContext: false,
+                useAnki: false,
+                ankiIP: "http://127.0.0.1:8765",
+                ankiTags: "",
+                ankiDeck: ""
             }
         };
         data.currentProfile = "default";
@@ -63,6 +67,11 @@ export function loadProfileFields(profile) {
     providerSelect.value = profile.provider || "groq";
 
     document.getElementById("useSentenceContext").checked = profile.useSentenceContext || false;
+    document.getElementById("useAnki").checked = profile.useAnki || false;
+    document.getElementById("ankiIP").value = profile.ankiIP || "http://127.0.0.1:8765";
+    document.getElementById("ankiTags").value = profile.ankiTags || "";
+    document.getElementById("ankiDeck").value = profile.ankiDeck || "";
+    document.getElementById("ankiModel").value = profile.ankiModel || "";
 
     renderProviderFields(profile.provider, profile.providerData || {});
 }
@@ -85,15 +94,34 @@ export async function saveProfile() {
         providerData[input.id] = input.value;
     });
 
+    let fieldMap = profiles[profileName]?.ankiFieldMap || {};
+
+    const selects = document.querySelectorAll("#ankiFields select");
+    if (selects.length) {
+        fieldMap = {};
+        selects.forEach(sel => {
+            fieldMap[sel.dataset.field] = sel.value;
+        });
+    }
+
+
     profiles[profileName] = {
         provider,
         providerData,
         prompt: document.getElementById("prompt").value,
         hotkey: document.getElementById("hotkeyInput").value || "Shift",
-        useSentenceContext: document.getElementById("useSentenceContext").checked
+        useSentenceContext: document.getElementById("useSentenceContext").checked,
+        useAnki: document.getElementById("useAnki").checked,
+        ankiIP: document.getElementById("ankiIP").value,
+        ankiTags: document.getElementById("ankiTags").value,
+        ankiDeck: document.getElementById("ankiDeck").value,
+        ankiModel: document.getElementById("ankiModel").value,
+        ankiFieldMap: fieldMap
     };
 
     await browser.storage.local.set({ profiles });
+    console.log("SAVING FIELD MAP:", fieldMap);
+
 }
 
 // --------------------------
@@ -209,3 +237,6 @@ export function renderProviderFields(provider, storedData = {}) {
         el.oninput = saveProfile;
     });
 }
+
+
+

@@ -1,36 +1,38 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-<meta charset="UTF-8">
-<title>Settings</title>
-<link rel="stylesheet" href="settings.css">
+  <meta charset="UTF-8">
+  <title>Settings</title>
+  <link rel="stylesheet" href="settings.css">
 </head>
+
 <body>
 
-<h2>Settings</h2>
+  <h2>Settings</h2>
 
-<label class="tooltip" data-tip="Select light or dark mode for the extension UI.">
-  Theme:
-</label>
-<select id="themeSelect">
-  <option value="light">Light</option>
-  <option value="dark">Dark</option>
-</select>
-<button id="applyChanges">Apply Changes</button>
+  <label class="tooltip" data-tip="Select light or dark mode for the extension UI.">
+    Theme:
+  </label>
+  <select id="themeSelect">
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+  </select>
+  <button id="applyChanges">Apply Changes</button>
 
-<hr>
+  <hr>
 
-<h3>Profiles</h3>
+  <h3>Profiles</h3>
 
-<label class="tooltip" data-tip="Choose which saved profile is currently active.">
-  Active Profile:
-</label>
-<select id="profileSelect"></select>
+  <label class="tooltip" data-tip="Choose which saved profile is currently active.">
+    Active Profile:
+  </label>
+  <select id="profileSelect"></select>
 
-<button id="addProfile">Add Profile</button>
-<button id="deleteProfile">Delete Profile</button>
+  <button id="addProfile">Add Profile</button>
+  <button id="deleteProfile">Delete Profile</button>
 
-<div id="profileSettings">
+  <div id="profileSettings">
     <h4>Profile Data</h4>
 
     <label class="tooltip" data-tip="Press a key to assign it as the hotkey that triggers the AI for this profile.">
@@ -58,12 +60,51 @@
     <textarea id="prompt" rows="4"></textarea>
     <br>
 
-    <label class="tooltip" data-tip="If enabled, the extension extracts the whole surrounding sentence to provide better context for the AI.">
+    <label class="tooltip"
+      data-tip="If enabled, the extension extracts the whole surrounding sentence to provide better context for the AI.">
       <input type="checkbox" id="useSentenceContext">
       Use sentence context
     </label>
-</div>
 
-<script type="module" src="settings.js"></script>
+    <hr>
+
+    <h4>Anki</h4>
+
+    <label class="tooltip" data-tip="Enable connection to an AnkiConnect server for this profile.">
+      <input type="checkbox" id="useAnki">
+      Enable Anki Connection
+      <span id="ankiStatus" style="margin-left:10px; color:red; display:none;"> Connection failed</span>
+    </label>
+
+    <br>
+
+    <label class="tooltip" data-tip="IP address and port of your AnkiConnect server (example: http://127.0.0.1:8765)">
+      Anki Server IP:
+    </label>
+    <input id="ankiIP" type="text" placeholder="http://127.0.0.1:8765" />
+
+    <div id="ankiConfig" style="display:none; margin-top:10px;">
+      <h4>Configure Anki Cards</h4>
+
+      <label class="tooltip" data-tip="Tags to apply to Anki cards. Separate by spaces or commas.">
+        Anki Tags:
+      </label>
+      <input id="ankiTags" type="text" placeholder="example: vocab ai japanese" />
+
+      <h4>Configure Deck</h4>
+      <select id="ankiDeck"></select>
+
+      <h4>Configure Model</h4>
+      <select id="ankiModel"></select>
+
+      <div id="ankiFields"></div>
+
+
+    </div>
+
+  </div>
+
+  <script type="module" src="settings.js"></script>
 </body>
+
 </html>

@@ -129,7 +129,7 @@ async function runOpenAI(providerData, prompt, text) {
 // ======================================================
 // MAIN DISPATCHER
 // ======================================================
-async function runAI(provider, providerData, text, prompt) {
+async function runAI(provider, providerData, prompt, text) {
     switch (provider) {
         case "openai":
             return await runOpenAI(providerData, prompt, text);
@@ -170,37 +170,188 @@ browser.contextMenus.onClicked.addListener(async (info, tab) => {
     });
 });
 
+function parseAnkiTags(tagString = "") {
+    return tagString
+        .split(/[,\s]+/)   // split on commas OR spaces
+        .map(t => t.trim())
+        .filter(Boolean); // remove empty strings
+}
+
+async function ankiRequest(ip, action, params = {}) {
+    const res = await fetch(ip, {
+        method: "POST",
+        body: JSON.stringify({
+            action,
+            version: 6,
+            params
+        })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data.result;
+}
 
 
-// ======================================================
-// HANDLE AI REQUESTS FROM FRONTEND
-// ======================================================
+async function getAnkiDecks(ip) {
+    return ankiRequest(ip, "deckNames");
+}
+
+async function getAnkiModels(ip) {
+    return ankiRequest(ip, "modelNames");
+}
+
+async function getModelFields(ip, model) {
+    return ankiRequest(ip, "modelFieldNames", { modelName: model });
+}
+
 browser.runtime.onMessage.addListener((msg) => {
-    if (msg.type !== "run_ai") return;
-
+    //console.log("BG RECEIVED:", msg);
     return (async () => {
-        try {
-            const { profiles, currentProfile } =
-                await browser.storage.local.get(["profiles", "currentProfile"]);
 
-            const profile = profiles[currentProfile];
+        // ======================================================
+        // HANDLE AI REQUESTS FROM FRONTEND
+        // ======================================================
+        if (msg.type == "run_ai") {
+            try {
+                const { profiles, currentProfile } =
+                    await browser.storage.local.get(["profiles", "currentProfile"]);
 
-            let finalPrompt = profile.prompt;
+                const profile = profiles[currentProfile];
 
-            if (profile.useSentenceContext && msg.contextSentence) {
-                finalPrompt = `Selected Text: ${msg.text}\nContext: ${msg.contextSentence}\n\n${profile.prompt}`;
+                let finalPrompt = profile.prompt;
+
+                if (profile.useSentenceContext && msg.contextSentence) {
+                    finalPrompt = `Context: ${msg.contextSentence}\n\n${profile.prompt}`;
+                }
+
+                const output = await runAI(
+                    profile.provider,
+                    profile.providerData,
+                    finalPrompt,
+                    msg.text
+                );
+
+                return { success: true, result: output };
+            } catch (err) {
+                return { success: false, error: String(err) };
             }
-
-            const output = await runAI(
-                profile.provider,
-                profile.providerData,
-                finalPrompt,
-                msg.text
-            );
-
-            return { success: true, result: output };
-        } catch (err) {
-            return { success: false, error: String(err) };
         }
+
+        // =====================
+        // TEST ANKI CONNECTION
+        // =====================
+        if (msg.type === "test_anki") {
+            try {
+                const response = await fetch(msg.ip, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: "version",
+                        version: 6
+                    })
+                });
+
+                const data = await response.json();
+                return { success: !!data?.result };
+            } catch {
+                return { success: false };
+            }
+        }
+
+        // =====================
+        // GET DECKS
+        // =====================
+        if (msg.type === "anki_get_decks") {
+            try {
+                const decks = await ankiRequest(msg.ip, "deckNames");
+                return decks; // must return array
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // =====================
+        // GET MODELS
+        // =====================
+        if (msg.type === "anki_get_models") {
+            try {
+                const models = await ankiRequest(msg.ip, "modelNames");
+                return models;
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // =====================
+        // GET MODEL FIELDS
+        // =====================
+        if (msg.type === "anki_get_fields") {
+            try {
+                const fields = await ankiRequest(
+                    msg.ip,
+                    "modelFieldNames",
+                    { modelName: msg.model }
+                );
+                return fields;
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // =====================
+        // ADD TO ANKI
+        // =====================
+        if (msg.type === "add_to_anki") {
+            try {
+                const { profiles, currentProfile } =
+                    await browser.storage.local.get(["profiles", "currentProfile"]);
+
+                const profile = profiles[currentProfile];
+                if (!profile?.useAnki || !profile?.ankiIP) {
+                    return { success: false, error: "Anki not configured" };
+                }
+
+                const tags = parseAnkiTags(profile.ankiTags);
+                const fields = {};
+
+                for (const [field, source] of Object.entries(profile.ankiFieldMap || {})) {
+                    if (source === "text") fields[field] = msg.selectedText;
+                    if (source === "ai") fields[field] = msg.aiAnswer;
+                    if (source === "context") fields[field] = msg.contextSentence || "";
+                }
+
+                const response = await fetch(profile.ankiIP, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: "addNote",
+                        version: 6,
+                        params: {
+                            note: {
+                                deckName: profile.ankiDeck || "Default",
+                                modelName: profile.ankiModel || "Basic",
+                                fields,
+                                tags
+                            }
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                if (data.error) {
+                    return { success: false, error: data.error };
+                }
+
+                return { success: true };
+            } catch (e) {
+                return { success: false, error: String(e) };
+            }
+        }
+
     })();
+
+    return true;
+
 });
+

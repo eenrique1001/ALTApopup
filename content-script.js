@@ -155,8 +155,19 @@ async function showPopup(input) {
     console.log("Showing popup for text:", text);
     console.log("With context sentence:", contextSentence);
 
-    const { theme } = await browser.storage.local.get("theme");
+    const { theme, profiles, currentProfile } =
+        await browser.storage.local.get(["theme", "profiles", "currentProfile"]);
     const currentTheme = theme || "light";
+    const profile = profiles?.[currentProfile] || {};
+
+    let ankiEnabled = !!profile.useAnki;
+    let aiConnected = false;
+    let ankiConnected = false;
+    let alreadyInDeck = false;
+
+    let aiAnswer = "";
+    let selectedText = text;
+    let contextForAnki = contextSentence;
 
     if (popup) popup.remove();
 
@@ -166,7 +177,10 @@ async function showPopup(input) {
 
     popup.innerHTML = `
         <div class="popup-header">
-            <strong>Analyzing...</strong>
+            <span>
+                <strong>Analyzing...</strong>
+                <button id="ankiAddBtn" title="Add to Anki" style="display:none;">+</button>
+            </span>
             <button id="closePopup">×</button>
         </div>
 
@@ -176,12 +190,59 @@ async function showPopup(input) {
         <div class="ai-result" id="aiResult"></div>
     `;
 
-    popup.querySelector("#closePopup").onclick = () => popup.remove();
+    popup.querySelector("#closePopup").onclick = () => {
+        clearInterval(ankiHeartbeat);
+        popup.remove();
+    };
     document.body.appendChild(popup);
     enableOutsideClickClose();
 
     const aiStatus = popup.querySelector("#aiStatus");
     const aiResult = popup.querySelector("#aiResult");
+    const ankiBtn = popup.querySelector("#ankiAddBtn");
+
+    let ankiHeartbeat = startAnkiHeartbeat(
+        async () => {
+            const { profiles, currentProfile } =
+                await browser.storage.local.get(["profiles", "currentProfile"]);
+
+            return profiles?.[currentProfile];
+        },
+        (connected) => {
+            ankiConnected = connected;
+            updateAnkiButton();
+        },
+        1000
+    );
+
+    function updateAnkiButton() {
+        if (!ankiEnabled || !aiConnected || !ankiConnected) {
+            ankiBtn.style.display = "none";
+            return;
+        }
+
+        ankiBtn.style.display = "inline-block";
+
+        if (alreadyInDeck) {
+            ankiBtn.style.background = "#9b59b6"; // purple
+            ankiBtn.title = "This word or phrase is already in your deck";
+        } else {
+            ankiBtn.style.background = "#2ecc71"; // green
+            ankiBtn.title = "Add this word or phrase to Anki";
+        }
+    }
+
+    ankiBtn.onclick = () => {
+        if (alreadyInDeck) return;
+
+        browser.runtime.sendMessage({
+            type: "add_to_anki",
+            selectedText,
+            contextForAnki,
+            aiAnswer
+        });
+
+    };
 
     // 🔥 Run AI immediately when popup shows
     try {
@@ -193,9 +254,28 @@ async function showPopup(input) {
 
 
         if (response && response.success) {
-            aiResult.innerHTML = formatAIResponse(response.result);
+            aiAnswer = formatAIResponse(response.result);
+            aiConnected = true;
+
+            aiResult.innerHTML = aiAnswer;
             aiStatus.textContent = "done";
             popup.querySelector(".popup-header strong").textContent = "Analysis Result";
+
+            if (ankiEnabled && profile.ankiIP) {
+                try {
+                    const ankiTest = await browser.runtime.sendMessage({
+                        type: "test_anki",
+                        ip: profile.ankiIP
+                    });
+
+                    ankiConnected = !!ankiTest?.success;
+                } catch {
+                    ankiConnected = false;
+                }
+            } else {
+                ankiConnected = false;
+            }
+            updateAnkiButton();
         } else {
             aiStatus.textContent = "error";
             aiResult.textContent = response?.error || "Unknown error";
@@ -205,6 +285,46 @@ async function showPopup(input) {
         aiResult.textContent = String(err);
     }
 }
+
+function startAnkiHeartbeat(getProfile, onStatusChange, interval = 3000) {
+    let lastState = null;
+
+    async function tick() {
+        try {
+            const profile = await getProfile();
+
+            if (!profile?.useAnki || !profile?.ankiIP) {
+                if (lastState !== false) {
+                    lastState = false;
+                    onStatusChange(false);
+                }
+                return;
+            }
+
+            const result = await browser.runtime.sendMessage({
+                type: "test_anki",
+                ip: profile.ankiIP
+            });
+
+            const connected = !!result?.success;
+
+            if (connected !== lastState) {
+                lastState = connected;
+                onStatusChange(connected);
+            }
+        } catch {
+            if (lastState !== false) {
+                lastState = false;
+                onStatusChange(false);
+            }
+        }
+    }
+
+    tick();
+    return setInterval(tick, interval);
+}
+
+
 
 function enableOutsideClickClose() {
     function handler(e) {
@@ -241,7 +361,7 @@ document.addEventListener("keydown", async (e) => {
 
     const sentence = extractSentence();
     console.log("Context sentence:", sentence);
-    console.log("Entrou"); 
+    console.log("Entrou");
 
     const { profiles, currentProfile } =
         await browser.storage.local.get(["profiles", "currentProfile"]);
