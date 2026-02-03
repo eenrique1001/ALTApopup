@@ -167,7 +167,6 @@ async function showPopup(input) {
 
     let aiAnswer = "";
     let selectedText = text;
-    let contextForAnki = contextSentence;
 
     if (popup) popup.remove();
 
@@ -238,13 +237,12 @@ async function showPopup(input) {
         browser.runtime.sendMessage({
             type: "add_to_anki",
             selectedText,
-            contextForAnki,
+            contextSentence,
             aiAnswer
         });
 
     };
 
-    // 🔥 Run AI immediately when popup shows
     try {
         const response = await browser.runtime.sendMessage({
             type: "run_ai",
