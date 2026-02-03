@@ -205,6 +205,80 @@ async function getModelFields(ip, model) {
     return ankiRequest(ip, "modelFieldNames", { modelName: model });
 }
 
+async function sha256(text) {
+    const data = new TextEncoder().encode(text);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    return [...new Uint8Array(hashBuffer)]
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
+}
+
+function normalize(text = "") {
+    return text
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, " ")
+        .replace(/[^\w\s]/g, "");
+}
+
+const MAX_DB_SIZE = 10000;
+
+async function getDB() {
+    const { ankiFingerprintDB } =
+        await browser.storage.local.get("ankiFingerprintDB");
+
+    return ankiFingerprintDB || { order: [], map: {} };
+}
+
+async function saveDB(db) {
+    await browser.storage.local.set({ ankiFingerprintDB: db });
+}
+
+async function checkFingerprint(primary, secondary) {
+    const db = await getDB();
+
+    for (const key of db.order) {
+        const entry = db.map[key];
+        if (!entry) continue;
+
+        if (entry.primary === primary && entry.secondary === secondary) {
+            return "exact";
+        }
+        if (entry.primary === primary) {
+            return "partial";
+        }
+    }
+
+    return "none";
+}
+
+async function storeFingerprint(primary, secondary) {
+    const db = await getDB();
+    const key = secondary; // unique enough
+
+    // If exists, remove from FIFO so we can re-add at end
+    if (db.map[key]) {
+        db.order = db.order.filter(k => k !== key);
+    }
+
+    db.map[key] = {
+        primary,
+        secondary,
+        time: Date.now()
+    };
+
+    db.order.push(key);
+
+    // FIFO trim
+    while (db.order.length > MAX_DB_SIZE) {
+        const oldest = db.order.shift();
+        delete db.map[oldest];
+    }
+
+    await saveDB(db);
+}
+
+
 browser.runtime.onMessage.addListener((msg) => {
     //console.log("BG RECEIVED:", msg);
     return (async () => {
@@ -332,7 +406,11 @@ browser.runtime.onMessage.addListener((msg) => {
                                 deckName: profile.ankiDeck || "Default",
                                 modelName: profile.ankiModel || "Basic",
                                 fields,
-                                tags
+                                tags,
+                                options: {
+                                    allowDuplicate: true
+                                }
+
                             }
                         }
                     })
@@ -343,10 +421,31 @@ browser.runtime.onMessage.addListener((msg) => {
                     return { success: false, error: data.error };
                 }
 
+                const primary = await sha256(normalize(msg.selectedText));
+                const secondary = await sha256(
+                    normalize(msg.selectedText + "|" + (msg.contextSentence || "").slice(0, 200))
+                );
+
+                await storeFingerprint(primary, secondary);
+
+
                 return { success: true };
             } catch (e) {
                 return { success: false, error: String(e) };
             }
+        }
+
+        // =====================
+        // CHECK FINGERPRINT
+        // =====================
+        if (msg.type === "anki_check_existing") {
+            const primary = await sha256(normalize(msg.text));
+            const secondary = await sha256(
+                normalize(msg.text + "|" + (msg.context || "").slice(0, 200))
+            );
+
+            const result = await checkFingerprint(primary, secondary);
+            return { status: result };
         }
 
     })();

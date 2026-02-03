@@ -56,6 +56,24 @@ style.textContent = `
     color: gray;
     margin-top: 4px;
 }
+
+#ankiControls {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#ankiCheck {
+    color: #9b59b6;
+    font-weight: bold;
+    display: none;
+}
+
+#ankiAddBtn {
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+
 `;
 
 function formatAIResponse(text) {
@@ -178,8 +196,11 @@ async function showPopup(input) {
         <div class="popup-header">
             <span>
                 <strong>Analyzing...</strong>
-                <button id="ankiAddBtn" title="Add to Anki" style="display:none;">+</button>
-            </span>
+                <span id="ankiControls" style="display:none;">
+                        <span id="ankiCheck" title="Already in deck">v</span>
+                        <button id="ankiAddBtn" title="Add to Anki">+</button>
+                        </span>
+                </span>
             <button id="closePopup">×</button>
         </div>
 
@@ -214,34 +235,47 @@ async function showPopup(input) {
         1000
     );
 
+    const ankiControls = popup.querySelector("#ankiControls");
+    const ankiCheck = popup.querySelector("#ankiCheck");
+
     function updateAnkiButton() {
         if (!ankiEnabled || !aiConnected || !ankiConnected) {
-            ankiBtn.style.display = "none";
+            ankiControls.style.display = "none";
             return;
         }
 
-        ankiBtn.style.display = "inline-block";
+        ankiControls.style.display = "inline-flex";
 
         if (alreadyInDeck) {
+            ankiCheck.style.display = "inline";
             ankiBtn.style.background = "#9b59b6"; // purple
             ankiBtn.title = "This word or phrase is already in your deck";
         } else {
+            ankiCheck.style.display = "none";
             ankiBtn.style.background = "#2ecc71"; // green
             ankiBtn.title = "Add this word or phrase to Anki";
         }
     }
 
-    ankiBtn.onclick = () => {
-        if (alreadyInDeck) return;
 
-        browser.runtime.sendMessage({
+    ankiBtn.onclick = async () => {
+        const result = await browser.runtime.sendMessage({
             type: "add_to_anki",
             selectedText,
             contextSentence,
             aiAnswer
         });
 
+        if (result?.success) {
+            alreadyInDeck = true;
+            ankiBtn.dataset.locked = "true";
+            updateAnkiButton();
+        } else {
+            alert(result?.error || "Failed to add to Anki");
+        }
     };
+
+
 
     try {
         const response = await browser.runtime.sendMessage({
@@ -259,6 +293,8 @@ async function showPopup(input) {
             aiStatus.textContent = "done";
             popup.querySelector(".popup-header strong").textContent = "Analysis Result";
 
+            let exists = { status: "none" };
+
             if (ankiEnabled && profile.ankiIP) {
                 try {
                     const ankiTest = await browser.runtime.sendMessage({
@@ -270,10 +306,28 @@ async function showPopup(input) {
                 } catch {
                     ankiConnected = false;
                 }
+
+
+                if (ankiConnected) {
+                    try {
+                        exists = await browser.runtime.sendMessage({
+                            type: "anki_check_existing",
+                            text: selectedText,
+                            context: contextSentence
+                        });
+                    } catch {
+                        exists = { status: "none" };
+                    }
+                }
+
+                alreadyInDeck = exists.status !== "none";
+                updateAnkiButton();
             } else {
                 ankiConnected = false;
+                alreadyInDeck = false;
             }
-            updateAnkiButton();
+
+
         } else {
             aiStatus.textContent = "error";
             aiResult.textContent = response?.error || "Unknown error";
