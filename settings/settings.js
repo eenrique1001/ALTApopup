@@ -45,6 +45,50 @@ document.addEventListener("DOMContentLoaded", async () => {
         testAnkiConnection();
         startAnkiHeartbeat();
     }, 500);
+
+    // Load UI settings
+    const { uiSettings } = await browser.storage.local.get("uiSettings");
+
+    document.getElementById("popupDraggable").checked =
+        uiSettings?.popupDraggable || false;
+
+    // Save when changed
+    document.getElementById("popupDraggable").onchange = async (e) => {
+        const { uiSettings } = await browser.storage.local.get("uiSettings");
+
+        await browser.storage.local.set({
+            uiSettings: {
+                ...uiSettings,
+                popupDraggable: e.target.checked
+            }
+        });
+    };
+
+    // Load UI settings - Popup Scale
+    const scale = uiSettings?.popupScale || 100;
+
+    const scaleInput = document.getElementById("popupScale");
+    const scaleValue = document.getElementById("popupScaleValue");
+
+    scaleInput.value = scale;
+    scaleValue.textContent = scale + "%";
+
+    scaleInput.oninput = async (e) => {
+        const value = parseInt(e.target.value);
+
+        scaleValue.textContent = value + "%";
+
+        const { uiSettings } = await browser.storage.local.get("uiSettings");
+
+        await browser.storage.local.set({
+            uiSettings: {
+                ...uiSettings,
+                popupScale: value
+            }
+        });
+    };
+
+
 });
 
 // Theme Apply button
@@ -57,7 +101,6 @@ document.getElementById("applyChanges").onclick = async () => {
 document.getElementById("profileSelect").addEventListener("change", () => {
     ankiConnectedOnce = false;
 });
-
 
 // Profile Buttons
 document.getElementById("addProfile").onclick = addProfile;
@@ -114,7 +157,6 @@ function stopAnkiHeartbeat() {
     clearInterval(ankiHeartbeat);
     ankiHeartbeat = null;
 }
-
 
 document.getElementById("useAnki").onchange = async () => {
     await saveProfile();
@@ -179,7 +221,6 @@ async function loadAnkiConfig() {
     await saveProfile();
 }
 
-
 function populateSelect(selectId, items) {
 
 
@@ -200,11 +241,6 @@ function populateSelect(selectId, items) {
         };
     }
 }
-
-/*document.getElementById("ankiModel").onchange = async () => {
-    await saveProfile();
-    await loadModelFields();
-};*/
 
 async function loadModelFields() {
     const model = document.getElementById("ankiModel").value;
@@ -284,6 +320,11 @@ async function restoreFieldMap() {
         sel.value = profile.ankiFieldMap[sel.dataset.field] || "text";
     });
 }
+
+/*document.getElementById("ankiModel").onchange = async () => {
+    await saveProfile();
+    await loadModelFields();
+};*/
 
 
 //setTimeout(testAnkiConnection, 300);

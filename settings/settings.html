@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Settings</title>
+  <title>ALTApopup Settings</title>
   <link rel="stylesheet" href="settings.css">
 </head>
 
@@ -21,6 +21,24 @@
   <button id="applyChanges">Apply Changes</button>
 
   <hr>
+
+  <h3>UI Settings</h3>
+
+  <label class="tooltip" data-tip="Allow the analysis popup to be moved around the screen.">
+    <input type="checkbox" id="popupDraggable">
+    Make popup draggable
+  </label>
+
+  <br><br>
+
+  <label class="tooltip" data-tip="Adjust the size of the popup UI. 100% is default size.">
+    Popup Font Scale:
+  </label>
+
+  <input type="range" id="popupScale" min="10" max="500" step="10">
+
+  <span id="popupScaleValue">100%</span>
+
 
   <h3>Profiles</h3>
 
@@ -50,7 +68,6 @@
     </select>
 
     <div id="providerFields">
-      <!-- Dynamic provider fields (API Key / Model) appear here -->
     </div>
 
     <label class="tooltip" data-tip="The instruction sent before your text. Controls how the AI responds.">

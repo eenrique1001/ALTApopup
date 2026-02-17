@@ -4,6 +4,10 @@
 
 export async function loadProfiles() {
     const data = await browser.storage.local.get(["theme", "profiles", "currentProfile"]);
+    const DEFAULT_PROMPT =
+        "Translate the selected text into english. " +
+        "Translate into a single word. " +
+        "Your answer must contain only that word.";
 
     // Initialize if empty
     if (!data.profiles || Object.keys(data.profiles).length === 0) {
@@ -11,7 +15,7 @@ export async function loadProfiles() {
             "default": {
                 provider: "groq", // default provider
                 providerData: { apiKey: "", model: "llama-3.1-8b-instant" }, // corrected groq default model
-                prompt: "",
+                prompt: DEFAULT_PROMPT,
                 hotkey: "Shift",
                 useSentenceContext: false,
                 useAnki: false,
@@ -134,10 +138,15 @@ export async function addProfile() {
     const data = await browser.storage.local.get(["profiles"]);
     const profiles = data.profiles || {};
 
+    const DEFAULT_PROMPT =
+        "Translate the selected text into english. " +
+        "Translate into a single word. " +
+        "Your answer must contain only that word.";
+
     profiles[name] = {
         provider: "groq",
         providerData: { apiKey: "", model: "llama-3.1-8b-instant" }, // corrected groq default model
-        prompt: "",
+        prompt: DEFAULT_PROMPT,
         hotkey: "Shift",
         useSentenceContext: false
     };

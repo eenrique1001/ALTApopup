@@ -5,7 +5,7 @@ style.textContent = `
 .analyze-popup {
     position: fixed;
     top: 20px;
-    right: 20px;
+    left: calc(100% - 420px);
     width: 400px;
     max-height: 400px;
     overflow: auto;
@@ -124,6 +124,7 @@ function formatAIResponse(text) {
 document.head.appendChild(style);
 
 let popup = null;
+let currentDragCleanup = null;
 let activeHotkey = "F";
 
 function extractSentence() {
@@ -197,7 +198,7 @@ async function showPopup(input) {
             <span>
                 <strong>Analyzing...</strong>
                 <span id="ankiControls" style="display:none;">
-                        <span id="ankiCheck" title="Already in deck">v</span>
+                        <span id="ankiCheck" title="Already in deck">✔</span>
                         <button id="ankiAddBtn" title="Add to Anki">+</button>
                         </span>
                 </span>
@@ -215,6 +216,8 @@ async function showPopup(input) {
         popup.remove();
     };
     document.body.appendChild(popup);
+    await applyPopupUISettings(popup);
+
     enableOutsideClickClose();
 
     const aiStatus = popup.querySelector("#aiStatus");
@@ -249,6 +252,7 @@ async function showPopup(input) {
         if (alreadyInDeck) {
             ankiCheck.style.display = "inline";
             ankiBtn.style.background = "#9b59b6"; // purple
+            ankiCheck.style.color = "#2ecc71"; // green
             ankiBtn.title = "This word or phrase is already in your deck";
         } else {
             ankiCheck.style.display = "none";
@@ -396,12 +400,16 @@ browser.storage.local.get(["profiles", "currentProfile"]).then(data => {
 });
 
 // React to profile switching
-browser.storage.onChanged.addListener(changes => {
+browser.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local") return;
     if (changes.profiles || changes.currentProfile) {
         browser.storage.local.get(["profiles", "currentProfile"]).then(data => {
             const profile = data.profiles && data.profiles[data.currentProfile];
             activeHotkey = (profile && profile.hotkey) || "Shift";
         });
+    }
+    if (changes.uiSettings && popup) {
+        applyPopupUISettings(popup);
     }
 });
 
@@ -446,5 +454,107 @@ browser.runtime.onMessage.addListener((msg) => {
         showPopup(msg.text);
     }
 });
+
+async function applyPopupUISettings(popupElement) {
+    const { uiSettings } = await browser.storage.local.get("uiSettings");
+
+    const draggable = uiSettings?.popupDraggable || false;
+    const savedPosition = uiSettings?.popupPosition;
+    const scalePercent = uiSettings?.popupScale || 100;
+
+    const scale = scalePercent / 100;
+
+    // Apply scaling immediately
+    popupElement.style.transform = `scale(${scale})`;
+    popupElement.style.transformOrigin = "top left";
+
+    // Apply saved position if exists
+    if (savedPosition?.top != null && savedPosition?.left != null) {
+        popupElement.style.top = savedPosition.top + "px";
+        popupElement.style.left = savedPosition.left + "px";
+    }
+
+    // --- Remove existing drag behavior if any ---
+    if (currentDragCleanup) {
+        currentDragCleanup();
+        currentDragCleanup = null;
+    }
+
+    if (!draggable) {
+        popupElement.querySelector(".popup-header").style.cursor = "default";
+        return;
+    }
+
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    const header = popupElement.querySelector(".popup-header");
+    header.style.cursor = "move";
+
+    function onMouseMove(e) {
+        if (!isDragging) return;
+
+        let newLeft = e.clientX - offsetX;
+        let newTop = e.clientY - offsetY;
+
+        const rect = popupElement.getBoundingClientRect();
+
+        const scaledWidth = rect.width;
+        const scaledHeight = rect.height;
+
+        const maxLeft = window.innerWidth - scaledWidth;
+        const maxTop = window.innerHeight - scaledHeight;
+
+        newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+        newTop = Math.max(0, Math.min(newTop, maxTop));
+
+        popupElement.style.left = newLeft + "px";
+        popupElement.style.top = newTop + "px";
+    }
+
+    async function onMouseUp() {
+        if (!isDragging) return;
+
+        isDragging = false;
+
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+
+        const rect = popupElement.getBoundingClientRect();
+
+        const { uiSettings } = await browser.storage.local.get("uiSettings");
+
+        await browser.storage.local.set({
+            uiSettings: {
+                ...uiSettings,
+                popupPosition: {
+                    top: rect.top,
+                    left: rect.left
+                }
+            }
+        });
+    }
+
+    function onMouseDown(e) {
+        isDragging = true;
+
+        const rect = popupElement.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+    }
+
+    header.addEventListener("mousedown", onMouseDown);
+
+    // Store cleanup function
+    currentDragCleanup = () => {
+        header.removeEventListener("mousedown", onMouseDown);
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+    };
+}
 
 

@@ -1,79 +1,206 @@
+/* ========== Base Layout ========== */
+
 body {
-    font-family: sans-serif;
-    padding: 15px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 24px;
+    margin: 0;
+    background: #f5f6f8;
+    color: #222;
 }
 
 body.dark {
-    background: #222;
-    color: white;
+    background: #1e1f23;
+    color: #f1f1f1;
 }
 
-body.dark select,
-body.dark input,
-body.dark textarea {
-    background: #333;
-    color: white;
-    border: 1px solid #555;
+/* Constrain width for readability */
+body {
+    max-width: 900px;
+    margin: 0 auto;
 }
 
+/* ========== Headings ========== */
 
-textarea, input {
+h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 26px;
+}
+
+h3 {
+    margin-top: 40px;
+    margin-bottom: 12px;
+    font-size: 18px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 6px;
+}
+
+body.dark h3 {
+    border-bottom: 1px solid #333;
+}
+
+h4 {
+    margin-top: 25px;
+    margin-bottom: 10px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+/* ========== Sections (Card Style) ========== */
+
+#profileSettings,
+#ankiConfig {
+    background: #ffffff;
+    padding: 18px 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    margin-top: 15px;
+}
+
+body.dark #profileSettings,
+body.dark #ankiConfig {
+    background: #2a2c31;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+}
+
+/* ========== Inputs & Controls ========== */
+
+input,
+select,
+textarea {
     width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    margin-top: 6px;
+    margin-bottom: 14px;
+    background: white;
+    color: inherit;
 }
 
-/* Make labels inside profileSettings line up with their inputs */
+textarea {
+    resize: vertical;
+}
+
+body.dark input,
+body.dark select,
+body.dark textarea {
+    background: #3a3c42;
+    border: 1px solid #555;
+    color: #fff;
+}
+
+/* Checkbox sizing */
+input[type="checkbox"] {
+    width: auto;
+    margin-right: 6px;
+}
+
+/* Range slider */
+input[type="range"] {
+    margin-top: 10px;
+}
+
+/* ========== Buttons ========== */
+
+button {
+    padding: 7px 14px;
+    border-radius: 6px;
+    border: none;
+    font-size: 13px;
+    cursor: pointer;
+    background: #2d7ef7;
+    color: white;
+    transition: background 0.2s ease;
+}
+
+button:hover {
+    background: #1f66d6;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+body.dark button {
+    background: #3a84ff;
+}
+
+body.dark button:hover {
+    background: #2f6edb;
+}
+
+/* Profile action buttons inline */
+#addProfile,
+#deleteProfile {
+    margin-right: 8px;
+    margin-top: 6px;
+}
+
+/* ========== Label Alignment ========== */
+
 #profileSettings label {
-  display: inline-flex;
-  align-items: center; /* vertically center checkbox + text */
-  gap: 8px;
-  margin: 4px 0;       /* a little vertical spacing between rows */
+    display: block;
+    margin-bottom: 2px;
+    font-weight: 500;
 }
 
-/* Tweak only the checkbox look slightly */
-#useSentenceContext {
-  margin: 0;           /* remove unexpected margins */
-  transform: none;     /* remove previous nudge which can cause overlap */
-  vertical-align: middle;
-  width: 16px;
-  height: 16px;
+/* Checkbox + label inline */
+#profileSettings label input[type="checkbox"] {
+    margin-right: 6px;
 }
 
+/* ========== Tooltip Styling ========== */
 
 .tooltip {
-  position: relative;
-  cursor: help;
+    position: relative;
+    cursor: help;
 }
 
 .tooltip:hover::after {
-  content: attr(data-tip);
-  position: absolute;
-  left: 0;
-  top: 100%;
-  white-space: normal;
-  background: #333;
-  color: #fff;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  width: max-content;
-  max-width: 260px;
-  z-index: 9999;
-  margin-top: 4px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    content: attr(data-tip);
+    position: absolute;
+    left: 0;
+    top: 100%;
+    white-space: normal;
+    background: #333;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    width: max-content;
+    max-width: 260px;
+    z-index: 9999;
+    margin-top: 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 
 .tooltip:hover::before {
-  content: "";
-  position: absolute;
-  top: calc(100% - 2px);
-  left: 8px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: #333 transparent transparent transparent;
-  z-index: 9998;
+    content: "";
+    position: absolute;
+    top: calc(100% - 2px);
+    left: 8px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+    z-index: 9998;
 }
 
+/* ========== Minor Polish ========== */
 
-input[type="checkbox"] {
-  width: auto;
+hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 30px 0;
+}
+
+body.dark hr {
+    border-top: 1px solid #333;
+}
+
+#popupScaleValue {
+    font-weight: 600;
+    margin-left: 8px;
 }
