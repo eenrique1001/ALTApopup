@@ -153,7 +153,7 @@ async function runAI(provider, providerData, prompt, text) {
 browser.runtime.onInstalled.addListener(() => {
     browser.contextMenus.create({
         id: "analyze-text",
-        title: "Analyze selected text",
+        title: "Analyze with ALTA",
         contexts: ["selection"]
     });
 });
@@ -280,7 +280,6 @@ async function storeFingerprint(primary, secondary) {
 
 
 browser.runtime.onMessage.addListener((msg) => {
-    //console.log("BG RECEIVED:", msg);
     return (async () => {
 
         // ======================================================

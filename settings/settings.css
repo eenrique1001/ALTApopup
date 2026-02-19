@@ -204,3 +204,27 @@ body.dark hr {
     font-weight: 600;
     margin-left: 8px;
 }
+
+/* ============ Header =================*/
+
+.settings-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-bottom: 25px !important;
+  white-space: nowrap !important;
+}
+
+.settings-header img {
+  height: 64px !important;
+  width: auto !important;
+  max-width: 64px !important;
+  display: block !important;
+}
+
+.settings-title {
+  font-size: clamp(18px, 3vw, 28px) !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+

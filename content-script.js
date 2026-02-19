@@ -420,8 +420,6 @@ document.addEventListener("keydown", async (e) => {
     if (!selection) return;
 
     const sentence = extractSentence();
-    console.log("Context sentence:", sentence);
-    console.log("Entrou");
 
     const { profiles, currentProfile } =
         await browser.storage.local.get(["profiles", "currentProfile"]);

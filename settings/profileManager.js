@@ -124,8 +124,6 @@ export async function saveProfile() {
     };
 
     await browser.storage.local.set({ profiles });
-    console.log("SAVING FIELD MAP:", fieldMap);
-
 }
 
 // --------------------------
