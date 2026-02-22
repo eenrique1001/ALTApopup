@@ -254,7 +254,7 @@ async function checkFingerprint(primary, secondary) {
 
 async function storeFingerprint(primary, secondary) {
     const db = await getDB();
-    const key = secondary; // unique enough
+    const key = secondary; // unique
 
     // If exists, remove from FIFO so we can re-add at end
     if (db.map[key]) {

@@ -44,7 +44,7 @@
         "https://*/*",
         "file://*/*"
       ],
-      "js": ["content-script.js"],
+      "js": ["content/content-script.js", "content/utils.js", "content/popupUI.js"],
       "run_at": "document_idle"
     }
   ]

@@ -320,11 +320,3 @@ async function restoreFieldMap() {
         sel.value = profile.ankiFieldMap[sel.dataset.field] || "text";
     });
 }
-
-/*document.getElementById("ankiModel").onchange = async () => {
-    await saveProfile();
-    await loadModelFields();
-};*/
-
-
-//setTimeout(testAnkiConnection, 300);
