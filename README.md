@@ -72,18 +72,6 @@ ALTA follows a layered architecture:
 - **Settings Page** – Modular configuration system (profiles, providers, UI behavior)  
 - **Local Storage** – Persistent state management  
 
-Further architectural documentation will be expanded in future revisions.
-
----
-
-## 🧠 Engineering Highlights
-
-- Clear separation between UI layer and integration logic  
-- Profile-aware configuration system with dynamic provider rendering  
-- Persistent UI behavior with reactive updates via storage listeners  
-- Independent local duplicate tracking mechanism (FIFO, capped size)  
-- Structured message-based communication between content and background scripts  
-
 ---
 
 ## 🚀 Installation
